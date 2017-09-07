@@ -1,6 +1,9 @@
 {
   "name": "emerald-server",
   "private": true,
+  "scripts": {
+    "start": "node dist/babel/Server.js"
+  },
   "devDependencies": {
     "@types/mysql": "0.0.34",
     "@types/node": "^8.0.26",
