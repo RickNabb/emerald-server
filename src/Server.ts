@@ -21,16 +21,17 @@ import { MasterManager } from './masterManager'
 require('babel-polyfill')
 
 class EmeraldServer {
+  
   /**
    * The ExpressJS module to set up routing for the client side of the app.
    */
-  private express = require('express')
-  private app = this.express()
+  // private express = require('express')
+  // private app = this.express()
 
   /**
    * The HTTP module for routing.
    */
-  private http = require('http').Server(this.app)
+  private http = require('http').createServer()
   
   /**
    * The path module for resolving filepaths.
@@ -123,7 +124,7 @@ class EmeraldServer {
     this.managers = {}
     
     this.managers.dbManager = new DatabaseManager(this.debug)
-    this.managers.dataObjectManager = new DataObjectManager(this)
+    this.managers.dataObjectManager = new DataObjectManager(this, this.managers.dbManager)
   }
 
   /**
@@ -139,9 +140,11 @@ class EmeraldServer {
     
     // Start up all the managers
     await this.managers.dbManager.init(this.config)
+      .catch(err => this.debug.error(err))
     await this.managers.dataObjectManager.init()
+      .catch(err => this.debug.error(err))
 
-    this.app.listen(this.config.connection.port, () => {
+    this.http.listen(this.config.connection.port, () => {
       this.debug.log("Ready to receive input on port " + this.config.connection.port)
     })
   }
@@ -152,7 +155,6 @@ class EmeraldServer {
    */
   private loadConfig() {
     return new Promise(async (resolve, reject) => {
-      console.log('test')
       const judge = (file) => {
         return new Promise(async (resolve, reject) => {
           if (file.indexOf('emerald-config.json') > -1)

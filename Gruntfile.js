@@ -10,7 +10,7 @@ module.exports = function (grunt) {
       options: {
         sourceMap: false,
         "plugins": ["transform-async-to-generator"],
-        "presets": ["react", "es2015"]
+        "presets": ["es2015"]
       },
       dist: {
         files: [{

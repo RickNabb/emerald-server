@@ -67,8 +67,8 @@ namespace Emerald {
     public initSocket(socket) {
       let packet
       this.engine.managers.packetManager.setSocket(socket)
-      for (packet in this.packets.server.in) {
-        socket.on(packet, this.packets.server.in[packet].handlePacket)
+      for (packet in this.packets.in) {
+        socket.on(packet, this.packets.in[packet].handlePacket)
       }
     }
 

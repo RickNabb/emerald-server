@@ -10,21 +10,24 @@ import { FsExtensions } from './utils/fsExt'
 import { ObjectExtensions } from './utils/objExt'
 import Engine from './Server'
 import { StringHelpers } from './utils/stringHelpers'
+import { DatabaseManager } from './db/databaseManager'
 
 class DataObjectManager {
 
   private engine : Engine
+  private dbManager : DatabaseManager
 
   private dataObjects
-  private dataObjectModules = {}
+  private dataObjectModules
   private dataTypes = {
     "int(11)": "int",
     "varchar(255)": "string",
     "tinyint(1)": "boolean"
   }
 
-  constructor (engine) {
+  constructor (engine, dbManager) {
     this.engine = engine
+    this.dbManager = dbManager
   }
 
   /**
@@ -37,12 +40,13 @@ class DataObjectManager {
     return new Promise(async (resolve, reject) => {
       const asyncTasks = []
       this.dataObjects = await this.collectDataObjects()
+        .catch(err => reject(err))
       asyncTasks.push(this.updateDatabase())
       asyncTasks.push(this.writeDataObjectModules())
       await Promise.all(asyncTasks)
-        .catch(err => this.engine.debug.error(err))
-      this.dataObjectModules = await this.loadDataObjectModules()
-
+        .catch(err => reject(err))
+      // this.dataObjectModules = await this.loadDataObjectModules()
+      //   .catch(err => reject(err))
       this.engine.debug.log('Data Object Manager started')
       resolve()
     })
@@ -54,11 +58,16 @@ class DataObjectManager {
    */
   public loadDataObjectModules() {
     return new Promise(async (resolve, reject) => {
-      let dataObjectFiles = await FsExtensions.readdirPromise('.')
-      let objectModules = {}
+      let dataObjectFiles = await FsExtensions.readdirPromise(__dirname + '/dataobjects/')
+        .catch(err => reject(err))
+      const objectModules = {}
       dataObjectFiles.reduce(async (modules, file) => {
-        if (await FsExtensions.getFileExtension(file) === '.js') {
-          modules[file.replace('.js', '')] = require(__dirname + '/dataobjects/' + file)(this.engine.managers.dbManager)
+        const extension = await FsExtensions.getFileExtension(file)
+          .catch(err => reject(err))
+        if (extension === '.js') {
+          const dataModule = require(__dirname + '/dataobjects/' + file)
+          console.log(dataModule)
+          // modules[file.replace('.js', '')] = dataModule(this.dbManager)
         }
         return modules
       }, objectModules)
@@ -77,6 +86,7 @@ class DataObjectManager {
       let filePromises = [], parsePromises = [], dataObjects = {}
       let filePath = this.engine.configDir + this.engine.config.dataObjectDir
       let files = await FsExtensions.readdirPromise(filePath)
+        .catch(err => reject(err))
       files.reduce((accum, cur) => {
         accum[cur.replace('.json', '')] = require(filePath + cur)
         return accum
@@ -174,7 +184,6 @@ class DataObjectManager {
     if (primary !== -1)
       query += 'PRIMARY KEY (`' + primary + '`)'
     query += ') ENGINE=InnoDB DEFAULT CHARSET=utf32 COLLATE=utf32_unicode_ci;'
-    console.log(query)
     return this.engine.managers.dbManager.mysql.queryPromise(query, [])
   }
 

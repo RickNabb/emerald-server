@@ -26,7 +26,7 @@ class DatabaseManager {
       // TODO : I feel like this is super hacky and should just happen
       // naturally... Look into this.
       this.mysql = new MySQLConnector(this.debug, config)
-      await this.mysql.connect()
+      await this.mysql.connect().catch(err => reject(err))
       resolve()
     })
   }
